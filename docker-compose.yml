@@ -1,0 +1,36 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: wand
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wand_kb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db_init:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://wand:postgres@db:5432/wand_kb
+      DATA_DIR: /data
+      INIT_DB: "true"
+    volumes:
+      - ./data:/data
+      - .:/app
+      - /usr/local/lib/python3.12/site-packages
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pgdata:
