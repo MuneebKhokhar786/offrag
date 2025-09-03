@@ -9,6 +9,7 @@ cffi==1.17.1
 charset-normalizer==3.4.3
 click==8.2.1
 cryptography==45.0.7
+docx==0.2.4
 fastapi==0.116.1
 greenlet==3.2.4
 h11==0.16.0
@@ -32,10 +33,12 @@ pycparser==2.22
 pydantic==2.11.7
 pydantic_core==2.33.2
 Pygments==2.19.2
+pypdf==6.0.0
 pypdfium2==4.30.0
 pytest==8.4.1
 python-docx==1.2.0
 python-dotenv==1.1.1
+python-multipart==0.0.20
 PyYAML==6.0.2
 regex==2025.8.29
 requests==2.32.5
