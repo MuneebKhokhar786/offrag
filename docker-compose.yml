@@ -31,5 +31,13 @@ services:
       - db
       - redis
 
+  worker:
+    build: .
+    command: celery -A celery_app.celery_app worker --loglevel=info -Q agents
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
 volumes:
   pgdata:
