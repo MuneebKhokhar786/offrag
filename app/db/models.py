@@ -1,3 +1,6 @@
+
+import logging
+logger = logging.getLogger(__name__)
 import uuid
 from sqlalchemy import Column, String, Integer, Text, JSON, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID

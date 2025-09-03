@@ -1,16 +1,22 @@
-import asyncio
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.services.logger import setup_logging
 from app.db.session import init_db
 from app.api.ingest import router as ingest_router
 from app.api.embed import router as embed_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger = setup_logging()
+    logger.info("Starting application lifespan context.")
     if os.getenv("INIT_DB", "true").lower() in ("1", "true", "yes"):
-        await asyncio.to_thread(init_db)
+        logger.info("Initializing database...")
+        await init_db()
+        logger.info("Database initialized.")
+    logger.info("Application startup complete")
     yield
 
 app = FastAPI(title="RAG API", version="0.1.0", lifespan=lifespan)
