@@ -1,5 +1,5 @@
 import logging
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from sqlalchemy import desc, select
 from app.db.session import SessionLocal
 from app.services.embedder import get_embedder
@@ -8,7 +8,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-CONF_THRESHOLD = 0.6
+CONF_THRESHOLD = 0.35
 
 async def run_search(q: str, k: int = 5):
     try:
