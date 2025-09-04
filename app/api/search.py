@@ -1,13 +1,16 @@
 import asyncio
+import logging
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import desc, select, func
 from app.db.session import get_db
 from app.services.embedder import get_embedder
 from app.db.models import Chunk
 import numpy as np
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
 
 @router.get("/search")
 async def search(
@@ -16,11 +19,20 @@ async def search(
     db: Session = Depends(get_db),
 ):
     try:
-        # Get the embedder and generate the query vector
+        logger.info("Search called: q=%s k=%d", q, k)
+
+        # Get the embedder and generate the query vector (support sync and async embedders)
         embedder = get_embedder()
-        vec = asyncio.to_thread(embedder.embed([q]))
+
+        vec = await embedder.embed([q])
+        logger.debug("Embedder returned %d vectors", len(vec) if hasattr(vec, "__len__") else 1)
         qvec = vec[0]
-        
+        logger.debug(
+            "Query vector length/type: %s/%s",
+            (len(qvec) if hasattr(qvec, "__len__") else "scalar"),
+            type(qvec),
+        )
+
         if isinstance(qvec, np.ndarray):
             qvec = qvec.tolist()
 
@@ -29,14 +41,16 @@ async def search(
                 Chunk.id,
                 Chunk.document_id,
                 Chunk.text,
-                func.cosine_distance(Chunk.embedding, qvec).label("score")
+                (Chunk.embedding.cosine_distance(qvec)).label("score"),
             )
-            .order_by("score")
+            .order_by(desc("score"))
             .limit(k)
         )
-        
+
         # Execute the query
+        logger.debug("Executing DB search for top-k=%d", k)
         results = db.execute(stmt).mappings().all()
+        logger.info("Search returned %d results for query", len(results))
 
         return {
             "query": q,
@@ -50,6 +64,6 @@ async def search(
                 for result in results
             ],
         }
-        
     except Exception as e:
+        logger.exception("Search failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
