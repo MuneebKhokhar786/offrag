@@ -2,12 +2,14 @@ import logging
 import os
 import uuid
 import hashlib
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models import Document, Chunk
 from app.indexing.extract_text import extract_text_from_file
 from app.indexing.chunker import chunk_text
+from app.workers.tasks import embed_pending_chunks
+
 
 router = APIRouter()
 
@@ -46,5 +48,7 @@ async def ingest(file: UploadFile = File(...), db: Session = Depends(get_db)):
         db.bulk_save_objects(objs)
         logger.debug("Bulk saved %d chunk objects", len(objs))
     db.commit()
-    logger.info("Ingest completed for document id=%s, chunks_indexed=%d", doc_id, len(objs))
-    return {"document_id": str(doc_id), "chunks_indexed": len(objs)}
+    batch_size = len(objs)
+    logger.info("Ingest completed for document id=%s, chunks_indexed=%d", doc_id, batch_size)
+    embed_pending_chunks.apply_async(queue='agents', kwargs={'batch_size': batch_size, 'doc_id': str(doc_id)})
+    return {"document_id": str(doc_id), "chunks_indexed": batch_size, "embedding_status": "queued"}

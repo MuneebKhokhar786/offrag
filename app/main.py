@@ -6,6 +6,7 @@ from app.services.logger import setup_logging
 from app.db.session import init_db
 from app.api.ingest import router as ingest_router
 from app.api.embed import router as embed_router
+from app.api.search import router as search_router
 
 
 @asynccontextmanager
@@ -31,6 +32,7 @@ app.add_middleware(
 
 app.include_router(ingest_router, prefix="/api")
 app.include_router(embed_router, prefix="/api")
+app.include_router(search_router, prefix="/api")
 
 
 @app.get("/healthz")

@@ -1,0 +1,55 @@
+import asyncio
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from app.db.session import get_db
+from app.services.embedder import get_embedder
+from app.db.models import Chunk
+import numpy as np
+
+router = APIRouter()
+
+@router.get("/search")
+async def search(
+    q: str = Query(..., description="Search query"),
+    k: int = Query(5, ge=1, le=20, description="Top-K results"),
+    db: Session = Depends(get_db),
+):
+    try:
+        # Get the embedder and generate the query vector
+        embedder = get_embedder()
+        vec = asyncio.to_thread(embedder.embed([q]))
+        qvec = vec[0]
+        
+        if isinstance(qvec, np.ndarray):
+            qvec = qvec.tolist()
+
+        stmt = (
+            select(
+                Chunk.id,
+                Chunk.document_id,
+                Chunk.text,
+                func.cosine_distance(Chunk.embedding, qvec).label("score")
+            )
+            .order_by("score")
+            .limit(k)
+        )
+        
+        # Execute the query
+        results = db.execute(stmt).mappings().all()
+
+        return {
+            "query": q,
+            "results": [
+                {
+                    "chunk_id": str(result["id"]),
+                    "document_id": str(result["document_id"]),
+                    "text": result["text"],
+                    "score": float(result["score"]),
+                }
+                for result in results
+            ],
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
