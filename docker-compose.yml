@@ -22,6 +22,8 @@ services:
       DATABASE_URL: postgresql://wand:postgres@db:5432/wand_kb
       DATA_DIR: /data
       INIT_DB: "true"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
       - ./data-backup:/data
       - .:/app
@@ -33,11 +35,17 @@ services:
 
   worker:
     build: .
-    command: celery -A celery_app.celery_app worker --loglevel=info -Q agents
+    command: celery -A celery_app worker --loglevel=debug -Q agents
     volumes:
       - .:/app
+    environment:
+      DATABASE_URL: postgresql://wand:postgres@db:5432/wand_kb
+      DATA_DIR: /data
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
     depends_on:
       - redis
+      - api
 
 volumes:
   pgdata:

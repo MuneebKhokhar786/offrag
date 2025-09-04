@@ -11,7 +11,7 @@ router = APIRouter()
 @router.post("/embed/")
 def create_embedding(texts: list[str]):
     logger.info("create_embedding called with %d texts", len(texts))
-    task = generate_embeddings.delay(texts)
+    task = generate_embeddings.apply_async(args=[texts], queue='agents')
     logger.info("Dispatched embedding task id=%s", task.id)
     return {"task_id": task.id}
 
