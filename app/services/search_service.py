@@ -35,7 +35,7 @@ async def run_search(q: str, k: int = 5):
                 Chunk.text,
                 (Chunk.embedding.cosine_distance(qvec)).label("score"),
             )
-            .order_by(desc("score"))
+            .order_by("score")
             .limit(k)
         )
 
@@ -65,7 +65,7 @@ async def run_search(q: str, k: int = 5):
             complete = False
         else:
             top_score = rows[0]["score"]
-            complete = top_score >= CONF_THRESHOLD
+            complete = top_score <= CONF_THRESHOLD
         response["top_score"] = top_score
         response["complete"] = complete
         logger.info("Search returned %d results for query", len(results))

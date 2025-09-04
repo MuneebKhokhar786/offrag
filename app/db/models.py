@@ -27,5 +27,5 @@ class Chunk(Base):
     seq = Column(Integer, nullable=False)
     text = Column(Text, nullable=False)
     hash = Column(String, nullable=False, index=True)
-    embedding = Column(Vector(1536), nullable=True) 
+    embedding = Column(Vector(384), nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
